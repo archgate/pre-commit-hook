@@ -1,0 +1,9 @@
+# https://pre-commit.com
+- id: archgate-check
+  name: Archgate ADR compliance check
+  description: Run archgate check --staged to validate Architecture Decision Records.
+  entry: archgate check --staged
+  language: system
+  pass_filenames: false
+  always_run: true
+  stages: [pre-commit]

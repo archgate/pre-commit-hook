@@ -1,0 +1,25 @@
+#!/bin/sh
+#
+# Archgate pre-commit hook
+# Runs ADR compliance checks on staged files before each commit.
+#
+# Install:
+#   cp hooks/pre-commit .git/hooks/pre-commit
+#   chmod +x .git/hooks/pre-commit
+#
+# Or point core.hooksPath at a tracked directory:
+#   git config core.hooksPath ./hooks
+
+set -e
+
+if ! command -v archgate >/dev/null 2>&1; then
+  echo "archgate: command not found" >&2
+  echo "" >&2
+  echo "Install the Archgate CLI first:" >&2
+  echo "  curl -fsSL https://cli.archgate.dev/install-unix | sh" >&2
+  echo "" >&2
+  echo "Skip this hook with: git commit --no-verify" >&2
+  exit 1
+fi
+
+exec archgate check --staged

@@ -1,0 +1,50 @@
+name: Validate
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened]
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate Hook
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check hook script syntax
+        run: bash -n hooks/pre-commit
+
+      - name: Validate YAML
+        run: python3 -c "import yaml; yaml.safe_load(open('.pre-commit-hooks.yaml'))"
+
+      - name: Verify hook is executable in git
+        run: |
+          if ! git ls-files --stage hooks/pre-commit | grep -q '^100755'; then
+            echo "::error::hooks/pre-commit must be executable (mode 100755)"
+            exit 1
+          fi
+
+  # Gate job — single required status check for the org ruleset.
+  status:
+    name: Validate Code
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [validate]
+    steps:
+      - name: Check job results
+        run: |
+          if [[ "${{ needs.validate.result }}" != "success" ]]; then
+            echo "::error::Validation failed: ${{ needs.validate.result }}"
+            exit 1
+          fi
+          echo "All checks passed."
